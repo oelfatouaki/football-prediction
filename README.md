@@ -64,7 +64,7 @@ Run them in order.
 ## Reproduce
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/football-prediction
+git clone https://github.com/oelfatouaki/football-prediction
 cd football-prediction
 uv sync
 uv run jupyter lab
