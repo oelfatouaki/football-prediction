@@ -120,7 +120,7 @@ Python 3.9+, pandas, NumPy, SciPy, scikit-learn, DuckDB (SQL), matplotlib, seabo
 
 ## About me
 
-Hi, I'm Oussama, a Computer Science graduate (Bac +2) learning data science and AI. I'm building real-world projects in Python, SQL and machine learning to prepare for university studies and a career in data.
+Hi, I'm Oussama, a Computer Science graduate learning data science and AI. I'm building real-world projects in Python, SQL and machine learning to prepare for university studies and a career in data.
 
 - Languages and tools: Python, SQL, Git
 - Interests: sports analytics, machine learning, building things end to end
