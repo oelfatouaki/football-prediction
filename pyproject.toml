@@ -1,7 +1,7 @@
 [project]
 name = "football-prediction"
 version = "0.1.0"
-description = "Add your description here"
+description = "Predict Premier League goals, scorelines and results with Poisson regression, benchmarked against bookmaker odds"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
