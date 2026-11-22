@@ -2,7 +2,7 @@
 
 Predict how many goals each team will score in a Premier League match, turn those expectations into scoreline and win/draw/loss probabilities, and benchmark the result against bookmaker odds.
 
-**Status:** end to end. Data cleaning, exploration, SQL features, modeling, scoreline evaluation, the final test-season evaluation, saved models and a Streamlit prototype are all done. An Elo team-strength feature and a LightGBM experiment remain optional next steps.
+**Status:** end to end. Data cleaning, exploration, SQL features, modeling, scoreline evaluation, the final test-season evaluation, saved models and a professional Streamlit app are all done. Future improvements include Dixon-Coles, LightGBM and richer context features.
 
 ## Results
 
@@ -46,7 +46,7 @@ Two evaluations, with models trained **only** on seasons up to 2023/24 in both c
 3. **Add team strength** with a pre-match Elo rating computed chronologically from match results (with a home-advantage term and goal-difference multiplier). Elo is updated after a match, so only prior results are used.
 4. **Model** expected goals with two Poisson regressions, one for home goals and one for away goals, using recent form plus Elo.
 5. **Scorelines:** assuming independent Poisson goals, the two expected-goals numbers become a probability for every score from 0-0 to 10-10. Adding up those cells gives home win, draw and away win probabilities.
-6. **Evaluate by time:** train on 2017/18 to 2023/24, compare models on 2024/25, score the chosen model once on 2025/26, then refit on all completed seasons for the demo. The in-progress 2026/27 season is held out.
+6. **Evaluate by time:** train on 2017/18 to 2023/24, compare models on 2024/25, score the chosen model once on 2025/26. For the live app, refit on all available played matches, including the in-progress 2026/27 season, so predictions use the latest form and Elo.
 
 ## Notebooks
 
@@ -60,7 +60,7 @@ Run them in order.
 | `04_training_table.ipynb` | One row per match with home and away features, filtered and split by time |
 | `05_models.ipynb` | Baseline and Poisson regression for expected goals |
 | `06_scorelines_and_evaluation.ipynb` | Scoreline grid, win/draw/loss probabilities, comparison with the bookmakers, exact-score hit rate, calibration and `check_match` |
-| `07_final_evaluation.ipynb` | One test-season evaluation, refit on all completed seasons and joblib export |
+| `07_final_evaluation.ipynb` | One test-season evaluation, then refit and joblib export for the app |
 
 ## Data
 
@@ -71,7 +71,7 @@ Run them in order.
 
 ## Validation approach
 
-- **Time-based split, never random:** train up to 2023/24, validate on 2024/25, test on 2025/26. The test score in notebook 07 is recorded once; afterwards the models are refitted on all completed seasons, and the 91 matches played so far in 2026/27 are held out for a live demo.
+- **Time-based split, never random:** train up to 2023/24, validate on 2024/25, test on 2025/26. The test score in notebook 07 is recorded once on the held-out season. For the deployed/app artifact, the models are then refitted on all available played matches, including the 91 matches played so far in 2026/27, so predictions reflect current-season form and Elo.
 - **No data leakage:** features use only matches played before kickoff. Shots, fouls, cards and odds from the match itself are never features.
 - **Thin history is filtered out:** 119 of 3,520 matches (the first five rounds of 2017/18 and each newly promoted club's first five matches) are dropped because a team has fewer than 5 earlier matches.
 - **Metrics:** log loss and accuracy for results; MAE and Poisson deviance for goals.
@@ -93,7 +93,7 @@ To rebuild everything from scratch, download the Premier League CSVs from footba
 uv run streamlit run streamlit_app.py
 ```
 
-The app has two team dropdowns and a kick-off date. It shows expected goals, a scoreline grid, win/draw/loss chances and the five most likely scores, using each team's most recent form.
+The app provides a professional match-prediction view: select home team, away team and kick-off date to get the likely outcome, confidence, expected goals, win/draw/win probabilities, top scorelines and a scoreline probability grid. It uses each team's most recent pre-match form and Elo, including played matches from the current 2026/27 season.
 
 ## Project structure
 
@@ -138,7 +138,7 @@ Python 3.9+, pandas, NumPy, SciPy, scikit-learn, DuckDB (SQL), matplotlib, seabo
 - **Independence assumption:** home and away goals are modeled as independent, which slightly misjudges low scores and draws. The test season's draw share was under-predicted by about 3 points.
 - **Exact scores:** the model almost always names 1-1 as the single most likely score, so exact-score accuracy is not meaningful.
 - **Excluded matches:** 119 matches with thin history are not used, mostly involving newly promoted clubs.
-- **In-progress season:** 2026/27 is held out, so the app's default prediction uses the most recent completed form as of 8 Nov 2026.
+- **In-progress season:** 2026/27 is still incomplete. The app includes its played matches for form/Elo, but future 2026/27 fixtures remain predictions, not observed outcomes.
 
 ## Future improvements
 
