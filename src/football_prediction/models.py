@@ -14,15 +14,15 @@ from .data import FEATURES, MODEL_DIR
 
 
 def fit_poisson(train: pd.DataFrame, target: str,
-                features=FEATURES, alpha: float = 1.0) -> Pipeline:
+                features=FEATURES, alpha: float = 0.5) -> Pipeline:
     """Fit a standardised Poisson regression for one side's goals."""
-    model = make_pipeline(StandardScaler(), PoissonRegressor(alpha=alpha, max_iter=1000))
+    model = make_pipeline(StandardScaler(), PoissonRegressor(alpha=alpha, max_iter=2000))
     model.fit(train[list(features)], train[target])
     return model
 
 
 def fit_models(train: pd.DataFrame, features=FEATURES,
-               alpha: float = 1.0) -> Dict[str, Pipeline]:
+               alpha: float = 0.5) -> Dict[str, Pipeline]:
     """Fit one model for home goals and one for away goals."""
     return {
         "home": fit_poisson(train, "home_goals", features, alpha),

@@ -1,13 +1,13 @@
 """Predict Premier League goals, scorelines and results."""
 
-from .data import FEATURES, LABELS, load_model_table, load_team_form, split
+from .data import FEATURES, LABELS, compute_elo, load_matches, load_model_table, load_team_form, split
 from .metrics import goal_metrics, implied_probs, result_metrics
 from .models import fit_models, load_models, predict_goals, save_models
 from .predict import match_features, predict_match
 from .scorelines import most_likely_score, result_probs, scoreline_grid, top_scores
 
 __all__ = [
-    "FEATURES", "LABELS", "load_model_table", "load_team_form", "split",
+    "FEATURES", "LABELS", "load_matches", "load_model_table", "load_team_form", "split", "compute_elo",
     "result_metrics", "goal_metrics", "implied_probs",
     "fit_models", "save_models", "load_models", "predict_goals",
     "match_features", "predict_match",

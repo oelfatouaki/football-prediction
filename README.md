@@ -14,7 +14,8 @@ Two evaluations, with models trained **only** on seasons up to 2023/24 in both c
 |---|---|---|
 | Constant (training result shares) | 41.1% | 1.078 |
 | Baseline goals to Poisson | 41.1% | 1.078 |
-| **Poisson regression** | **49.6%** | **1.019** |
+| Form-only Poisson regression | 49.6% | 1.019 |
+| **Poisson + Elo** | **51.7%** | **1.007** |
 | Bookmaker odds (Bet365, margin removed) | 54.1% | 0.971 |
 
 **Test season — 2025/26** (scored once, in notebook 07, after the model was chosen):
@@ -23,15 +24,16 @@ Two evaluations, with models trained **only** on seasons up to 2023/24 in both c
 |---|---|---|
 | Constant (training result shares) | 42.4% | 1.086 |
 | Baseline goals to Poisson | 42.4% | 1.081 |
-| **Poisson regression** | **48.8%** | **1.046** |
+| Form-only Poisson regression | 48.8% | 1.046 |
+| **Poisson + Elo** | **49.1%** | **1.041** |
 | Bookmaker odds (Bet365, margin removed) | 49.3% | 1.016 |
 
-- The model beats both baselines on both seasons. It closes about 55% of the log-loss gap to the bookmakers on validation and about 54% on the test season, using only recent-form features.
-- On the test season it is just 0.5 accuracy points behind the bookmakers (within sampling noise), but the bookmakers still have the better log loss, so they remain the stronger probabilistic benchmark. Their odds reflect lineups, injuries and market information the model lacks.
-- Goal-level errors, validation: MAE 0.993 (home) and 0.888 (away) against 1.050 and 0.929 for the baseline; Poisson deviance 1.172 and 1.071 against 1.239 and 1.142.
-- Goal-level errors, test: MAE 0.975 and 0.845 against 0.998 and 0.883; Poisson deviance 1.095 and 1.075 against 1.122 and 1.117.
-- The most likely exact score was right in 12.3% of validation matches and 10.4% of test matches. That is close to what always naming 1-1 would achieve, so exact-score accuracy is not a measure of skill; the probabilities are the real output.
-- Calibration is reasonable but not perfect. Validation: predicted 44.2% / 23.6% / 32.2% for home win / draw / away win against actual 41.1% / 24.0% / 34.9%. Test: 43.6% / 24.3% / 32.1% against 42.4% / 27.2% / 30.4%. The direction of the small home/draw shifts differs between the two seasons, which is a reminder that one season is a small sample.
+- Adding pre-match Elo ratings improves the form-only model on both seasons: validation log loss 1.019 -> 1.007 and test log loss 1.046 -> 1.041. Walk-forward checks across 2021/22-2025/26 show the same direction every season.
+- The Poisson + Elo model closes roughly 66% of the validation log-loss gap to the bookmakers and 62% on the test season, still without using odds, lineups, injuries or xG.
+- On the test season it is 0.2 accuracy points behind the bookmakers (within sampling noise), but the bookmakers still have the better log loss, so they remain the stronger probabilistic benchmark.
+- Form-only goal-level errors, test: MAE 0.975/0.845 vs 0.998/0.883 baseline; Poisson deviance 1.095/1.075 vs 1.122/1.117. The Elo model improves result probabilities most; goal MAE gains are modest.
+- The most likely exact score was right in 12.3% of validation matches and 10.4% of test matches for the form-only model. That is close to what always naming 1-1 would achieve, so exact-score accuracy is not a measure of skill; the probabilities are the real output.
+- Calibration is reasonable but not perfect. Poisson + Elo validation: predicted 44.5% / 23.9% / 31.6% for home win / draw / away win against actual 41.1% / 24.0% / 34.9%. Test: 44.0% / 24.4% / 31.6% against 42.4% / 27.2% / 30.4%. The small shifts vary by season, which is a reminder that one season is a small sample.
 
 ![Share of match results](reports/figures/result_shares.png)
 
@@ -41,9 +43,10 @@ Two evaluations, with models trained **only** on seasons up to 2023/24 in both c
 
 1. **Clean** nine seasons of results, plus the start of 2026/27, from football-data.co.uk.
 2. **Build features** with SQL window functions: for each team before each match, its points over the last 5 matches, its average goals scored and conceded over the last 5 and 10, and its days of rest. Every window stops at the previous match, so nothing from the match itself leaks in.
-3. **Model** expected goals with two Poisson regressions, one for home goals and one for away goals.
-4. **Scorelines:** assuming independent Poisson goals, the two expected-goals numbers become a probability for every score from 0-0 to 10-10. Adding up those cells gives home win, draw and away win probabilities.
-5. **Evaluate by time:** train on 2017/18 to 2023/24, compare models on 2024/25, score the chosen model once on 2025/26, then refit on all completed seasons for the demo. The in-progress 2026/27 season is held out.
+3. **Add team strength** with a pre-match Elo rating computed chronologically from match results (with a home-advantage term and goal-difference multiplier). Elo is updated after a match, so only prior results are used.
+4. **Model** expected goals with two Poisson regressions, one for home goals and one for away goals, using recent form plus Elo.
+5. **Scorelines:** assuming independent Poisson goals, the two expected-goals numbers become a probability for every score from 0-0 to 10-10. Adding up those cells gives home win, draw and away win probabilities.
+6. **Evaluate by time:** train on 2017/18 to 2023/24, compare models on 2024/25, score the chosen model once on 2025/26, then refit on all completed seasons for the demo. The in-progress 2026/27 season is held out.
 
 ## Notebooks
 
@@ -131,7 +134,7 @@ Python 3.9+, pandas, NumPy, SciPy, scikit-learn, DuckDB (SQL), matplotlib, seabo
 ## Limitations
 
 - **One validation season and one test season:** 375 matches each, so differences of a few points are noisy. The bookmakers' edge in log loss is small but consistent across both.
-- **Recent form only:** no team-strength rating, lineups, injuries or schedule context. This is the main reason the model trails the bookmakers.
+- **No lineup/injury/xG context:** Elo captures long-run team strength, but the model still lacks lineups, injuries, schedule congestion, transfers and expected-goals data. This is likely the main remaining gap to bookmakers.
 - **Independence assumption:** home and away goals are modeled as independent, which slightly misjudges low scores and draws. The test season's draw share was under-predicted by about 3 points.
 - **Exact scores:** the model almost always names 1-1 as the single most likely score, so exact-score accuracy is not meaningful.
 - **Excluded matches:** 119 matches with thin history are not used, mostly involving newly promoted clubs.
@@ -139,10 +142,11 @@ Python 3.9+, pandas, NumPy, SciPy, scikit-learn, DuckDB (SQL), matplotlib, seabo
 
 ## Future improvements
 
-- Add a team-strength feature such as an Elo rating
-- Try LightGBM with a Poisson objective
-- Try a Dixon-Coles correction for low scores
-- Add expected goals (xG) data and more leagues
+- Try a Dixon-Coles correction for low-score dependence
+- Try LightGBM / XGBoost with Poisson objective and careful regularisation
+- Add attacking/defensive Elo or xG-based team strength
+- Add lineup, injury, rest-travel and market-movement context where available
+- Add more leagues and a probability calibration report
 
 ## About me
 

@@ -10,7 +10,13 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from football_prediction import load_model_table, load_models, load_team_form, predict_match
+from football_prediction import (
+    load_model_table,
+    load_models,
+    load_team_form,
+    predict_match,
+)
+from football_prediction.data import load_matches
 from football_prediction.metrics import implied_probs
 from football_prediction.scorelines import MAX_GOALS
 
@@ -25,11 +31,12 @@ def get_assets():
     models = load_models()
     form = load_team_form()
     matches = load_model_table()
-    return models, form, matches
+    raw_matches = load_matches()
+    return models, form, matches, raw_matches
 
 
 try:
-    models, form, matches = get_assets()
+    models, form, matches, raw_matches = get_assets()
 except FileNotFoundError:
     st.error(
         "Saved model not found. Run `notebooks/07_final_evaluation.ipynb` to create "
@@ -40,6 +47,7 @@ except FileNotFoundError:
 TEAMS = sorted(form["Team"].unique())
 LATEST = pd.Timestamp(form["Date"].max()).date()
 TRAINED_ON = models.get("trained_on", "completed seasons")
+MODEL_VERSION = "Poisson + Elo"
 
 # Team accent colors (primary-ish; used sparingly)
 TEAM_COLORS = {
@@ -147,9 +155,9 @@ st.markdown(
   <h1>Premier League Match Predictor</h1>
   <p>Pick a fixture and a kick-off date. The model estimates expected goals from recent form,
   then turns them into scoreline probabilities and a win / draw / win forecast.</p>
-  <span class="pill">Poisson regression</span>
+  <span class="pill">{MODEL_VERSION}</span>
   <span class="pill">Trained through {TRAINED_ON}</span>
-  <span class="pill">Test log loss 1.046 vs bookmaker 1.016</span>
+  <span class="pill">Stronger than form-only baseline</span>
 </div>
 """,
     unsafe_allow_html=True,
@@ -193,7 +201,7 @@ if predict_btn:
 # ---------------------------------------------------------------------------
 
 try:
-    pred = predict_match(home, away, kick_date, models, form)
+    pred = predict_match(home, away, kick_date, models, form, raw_matches)
 except ValueError as exc:
     st.error(str(exc))
     st.stop()
@@ -383,7 +391,7 @@ This is a form-based Poisson model. It does not know lineups, injuries, transfer
 
 st.markdown(
     "<div class='small-note' style='text-align:center;margin-top:1.2rem'>"
-    "Built with scikit-learn Poisson regression · Evaluated on untouched 2025/26 season · "
+    "Built with scikit-learn Poisson + Elo · Evaluated on untouched 2025/26 season · "
     "Bookmaker baseline: Bet365 odds with margin removed"
     "</div>",
     unsafe_allow_html=True,
