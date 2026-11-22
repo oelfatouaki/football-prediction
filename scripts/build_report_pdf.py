@@ -31,6 +31,24 @@ def new_page():
     return fig, ax
 
 
+def text_fits_width(ax, text, fontsize, fontweight='normal', family='DejaVu Sans'):
+    renderer = ax.figure.canvas.get_renderer()
+    t = ax.text(0, 0, text, fontsize=fontsize, fontweight=fontweight, family=family)
+    bbox = t.get_window_extent(renderer=renderer)
+    inv = ax.transData.inverted()
+    x0, _ = inv.transform((bbox.x0, bbox.y0))
+    x1, _ = inv.transform((bbox.x1, bbox.y1))
+    t.remove()
+    return (x1 - x0) <= CONTENT_W
+
+
+def fit_font_size(ax, text, max_size, min_size=11, fontweight='normal', family='DejaVu Sans'):
+    size = max_size
+    while size > min_size and not text_fits_width(ax, text, size, fontweight=fontweight, family=family):
+        size -= 0.5
+    return size
+
+
 def draw_wrapped(ax, x, y, text, size, color, width_chars, leading, fontweight='normal', style='normal', family='DejaVu Sans'):
     for line in wrap_text(text, width=width_chars):
         if y < BOTTOM:
@@ -41,11 +59,15 @@ def draw_wrapped(ax, x, y, text, size, color, width_chars, leading, fontweight='
 
 
 def draw_title(ax, title, subtitle=None):
+    # Ensure canvas renderer exists for width measurement.
+    ax.figure.canvas.draw()
+    title_size = fit_font_size(ax, title, max_size=24, min_size=14, fontweight='bold')
     y = TOP
-    y, _ = draw_wrapped(ax, MARGIN_X, y, title, size=24, color='#0f172a', width_chars=52, leading=0.42, fontweight='bold')
+    y, _ = draw_wrapped(ax, MARGIN_X, y, title, size=title_size, color='#0f172a', width_chars=80, leading=max(0.32, title_size * 0.018), fontweight='bold')
     y -= 0.05
     if subtitle:
-        y, _ = draw_wrapped(ax, MARGIN_X, y, subtitle, size=11.5, color='#475569', width_chars=88, leading=0.24)
+        subtitle_size = fit_font_size(ax, subtitle, max_size=11.5, min_size=9.5)
+        y, _ = draw_wrapped(ax, MARGIN_X, y, subtitle, size=subtitle_size, color='#475569', width_chars=95, leading=max(0.22, subtitle_size * 0.02))
     y -= 0.08
     ax.plot([MARGIN_X, PAGE_W - MARGIN_X], [y, y], color='#cbd5e1', linewidth=1)
     return y - 0.28
