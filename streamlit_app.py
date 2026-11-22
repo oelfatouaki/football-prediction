@@ -184,7 +184,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown(
         f"<div class='small-note'><b>Data coverage</b><br>Latest match in data: {LATEST}. "
-        f"The in-progress 2026/27 season is held out from training.<br><br>"
+        f"Predictions use form and Elo updated through the latest played matches, including the current 2026/27 season games.<br><br>"
         f"<b>Model</b><br>Two Poisson regressions (home/away goals) on last-5/last-10 form and rest days. "
         f"No lineups, injuries, xG, or bookmaker odds used as features.</div>",
         unsafe_allow_html=True,
