@@ -31,14 +31,24 @@ def new_page():
     return fig, ax
 
 
+def draw_wrapped(ax, x, y, text, size, color, width_chars, leading, fontweight='normal', style='normal', family='DejaVu Sans'):
+    for line in wrap_text(text, width=width_chars):
+        if y < BOTTOM:
+            return y, True
+        ax.text(x, y, line, fontsize=size, color=color, va='top', fontweight=fontweight, style=style, family=family)
+        y -= leading if line else leading * 0.7
+    return y, False
+
+
 def draw_title(ax, title, subtitle=None):
-    ax.text(MARGIN_X, TOP, title, fontsize=28, fontweight='bold', color='#0f172a', va='top')
-    y = TOP - 0.55
+    y = TOP
+    y, _ = draw_wrapped(ax, MARGIN_X, y, title, size=24, color='#0f172a', width_chars=52, leading=0.42, fontweight='bold')
+    y -= 0.05
     if subtitle:
-        ax.text(MARGIN_X, y, subtitle, fontsize=12, color='#475569', va='top')
-        y -= 0.35
+        y, _ = draw_wrapped(ax, MARGIN_X, y, subtitle, size=11.5, color='#475569', width_chars=88, leading=0.24)
+    y -= 0.08
     ax.plot([MARGIN_X, PAGE_W - MARGIN_X], [y, y], color='#cbd5e1', linewidth=1)
-    return y - 0.35
+    return y - 0.28
 
 
 def wrap_text(text, width=95):
@@ -62,17 +72,17 @@ def draw_paragraph(ax, y, text, size=10.5, color='#1e293b', leading=0.22, width=
 
 
 def draw_heading(ax, y, text, size=16, color='#0f172a'):
-    if y < BOTTOM + 0.4:
+    if y < BOTTOM + 0.6:
         return y, True
-    ax.text(MARGIN_X, y, text, fontsize=size, fontweight='bold', color=color, va='top')
-    return y - 0.38, False
+    y, overflow = draw_wrapped(ax, MARGIN_X, y, text, size=size, color=color, width_chars=72, leading=0.32, fontweight='bold')
+    return y - 0.08, overflow
 
 
 def draw_subheading(ax, y, text, size=12.5, color='#0f172a'):
-    if y < BOTTOM + 0.3:
+    if y < BOTTOM + 0.45:
         return y, True
-    ax.text(MARGIN_X, y, text, fontsize=size, fontweight='bold', color=color, va='top')
-    return y - 0.3, False
+    y, overflow = draw_wrapped(ax, MARGIN_X, y, text, size=size, color=color, width_chars=84, leading=0.27, fontweight='bold')
+    return y - 0.05, overflow
 
 
 def draw_bullets(ax, y, items, size=10.5, width=92):
@@ -193,7 +203,7 @@ def section_pages(pdf, title, subtitle, blocks):
             fig, ax = new_page(); y = TOP
             # retry same block on new page
             if t == 'heading':
-                y, _ = draw_heading(ax, y, b['text'], size=b.get('size', 16))
+                y, _ = draw_heading(ax, y, b['text'], size=b.get('size', 15))
             elif t == 'subheading':
                 y, _ = draw_subheading(ax, y, b['text'])
             elif t == 'paragraph':
@@ -201,7 +211,7 @@ def section_pages(pdf, title, subtitle, blocks):
             elif t == 'bullets':
                 y, _ = draw_bullets(ax, y, b['items'])
             elif t == 'image':
-                y, _ = draw_image(ax, y, b['path'], max_width=b.get('max_width', CONTENT_W), max_height=b.get('max_height', 3.2), caption=b.get('caption'))
+                y, _ = draw_image(ax, y, b['path'], max_width=b.get('max_width', CONTENT_W), max_height=b.get('max_height', 3.0), caption=b.get('caption'))
             elif t == 'table':
                 y, _ = draw_table(ax, y, b['df'], col_widths=b.get('col_widths'))
     pdf.savefig(fig)
